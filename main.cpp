@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
 
     QVector<QVector3D> vertices = QVector<QVector3D>()
             << v0 << n0 << blue
-            << v1 << n1 << blue
+            << v1 << n1 << orange
             << v2 << n2 << blue
             << v3 << n3 << red;
 
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
     customGeometry->addAttribute(positionAttribute);
     customGeometry->addAttribute(normalAttribute);
     customGeometry->addAttribute(colorAttribute);
-    customGeometry->addAttribute(indexAttribute);
+    //customGeometry->addAttribute(indexAttribute);
 
     customMeshRenderer->setInstanceCount(1);
     customMeshRenderer->setIndexOffset(0);
@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
     customMeshRenderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Triangles);
     customMeshRenderer->setGeometry(customGeometry);
     // 4 faces of 3 points
-    customMeshRenderer->setVertexCount(12);
+    customMeshRenderer->setVertexCount(4);
 
     customMeshEntity->addComponent(customMeshRenderer);
     customMeshEntity->addComponent(transform);
