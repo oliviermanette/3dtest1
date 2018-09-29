@@ -1,4 +1,6 @@
-QT -= gui
+QT += qml
+QT += core gui widgets
+QT += 3dcore 3drender 3dinput 3dlogic 3dextras 3danimation
 
 CONFIG += c++11 console
 CONFIG -= app_bundle
