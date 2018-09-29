@@ -61,7 +61,6 @@ int main(int argc, char* argv[])
 
     Qt3DRender::QBuffer *vertexPosBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::VertexBuffer, customGeometry);
     Qt3DRender::QBuffer *triangleNormBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::VertexBuffer, customGeometry);
-    Qt3DRender::QBuffer *vertexColorBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::VertexBuffer, customGeometry);
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -69,7 +68,7 @@ int main(int argc, char* argv[])
 
         QString strFilename = "/Users/oliviermanette/QtApps/3dtest1/3dtest1.stl";
         QFile file(strFilename);
-        QByteArray gbaBuffer,normBuffer, colorBuffer;
+        QByteArray gbaBuffer,normBuffer;
 
         if (file.open(QIODevice::ReadOnly))
             gbaBuffer = file.readAll();
@@ -84,20 +83,19 @@ int main(int argc, char* argv[])
         lcolor[0]=154.0f/255.0f;
         lcolor[1]=219.0f/255.0f;
         lcolor[2]=217.0f/255.0f;
-        for (ulong i=0;i<luintSize*3;i++)
-            colorBuffer.append(reinterpret_cast<char*>(&lcolor),3*sizeof (float));
 
         for (ulong i=0;i<luintSize;i++){
             normBuffer.append(gbaBuffer.mid(i*(9*sizeof (float)),3*sizeof(float)));
             gbaBuffer.remove(i*(9*sizeof (float)),3*sizeof(float));
             gbaBuffer.remove((i+1)*(9*sizeof (float)),2);
         }
+
+        for (ulong i=luintSize*3;i>0;i--)
+            gbaBuffer.insert(i*(3*sizeof (float)),reinterpret_cast<char*>(&lcolor),3*sizeof (float));
         qDebug()<<"dataSize after : "<<gbaBuffer.size();
 
     vertexPosBuffer->setData(gbaBuffer);
     triangleNormBuffer->setData(normBuffer);
-    vertexColorBuffer->setData(colorBuffer);
-//    indexDataBuffer->setData(indexBufferData);
 
     // Attributes
     Qt3DRender::QAttribute *positionAttribute = new Qt3DRender::QAttribute();
@@ -106,7 +104,7 @@ int main(int argc, char* argv[])
     positionAttribute->setVertexBaseType(Qt3DRender::QAttribute::Float);
     positionAttribute->setVertexSize(3);
     positionAttribute->setByteOffset(0);
-    positionAttribute->setByteStride(3*sizeof (float));
+    positionAttribute->setByteStride(6*sizeof (float));
     positionAttribute->setCount(luintSize*3);
     positionAttribute->setName(Qt3DRender::QAttribute::defaultPositionAttributeName());
 
@@ -122,11 +120,11 @@ int main(int argc, char* argv[])
 
     Qt3DRender::QAttribute *colorAttribute = new Qt3DRender::QAttribute();
     colorAttribute->setAttributeType(Qt3DRender::QAttribute::VertexAttribute);
-    colorAttribute->setBuffer(vertexColorBuffer);
+    colorAttribute->setBuffer(vertexPosBuffer);
     colorAttribute->setVertexBaseType(Qt3DRender::QAttribute::Float);
     colorAttribute->setVertexSize(3);
-    colorAttribute->setByteOffset(0);
-    colorAttribute->setByteStride(3*sizeof (float));
+    colorAttribute->setByteOffset(3*sizeof (float));
+    colorAttribute->setByteStride(6*sizeof (float));
     colorAttribute->setCount(luintSize*3);
     colorAttribute->setName(Qt3DRender::QAttribute::defaultColorAttributeName());
 
