@@ -22,6 +22,8 @@
 #include <Qt3DExtras/qt3dwindow.h>
 #include <Qt3DExtras/qorbitcameracontroller.h>
 
+#include <QFile>
+
 int main(int argc, char* argv[])
 {
     QGuiApplication app(argc, argv);
@@ -34,10 +36,10 @@ int main(int argc, char* argv[])
     // Camera
     Qt3DRender::QCamera *cameraEntity = view.camera();
 
-    cameraEntity->lens()->setPerspectiveProjection(45.0f, 16.0f/9.0f, 0.1f, 1000.0f);
-    cameraEntity->setPosition(QVector3D(0, 0, 40.0f));
+    cameraEntity->lens()->setPerspectiveProjection(90.0f, 16.0f/9.0f, 0.1f, 1000.0f);
+    cameraEntity->setPosition(QVector3D(-16.0f, 0.0f, 40.0f));
     cameraEntity->setUpVector(QVector3D(0, 1, 0));
-    cameraEntity->setViewCenter(QVector3D(0, 0, 0));
+    cameraEntity->setViewCenter(QVector3D(-1, 0, -1));
 
     // For camera controls
     Qt3DExtras::QOrbitCameraController *camController = new Qt3DExtras::QOrbitCameraController(rootEntity);
@@ -59,7 +61,65 @@ int main(int argc, char* argv[])
 
     Qt3DRender::QBuffer *vertexDataBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::VertexBuffer, customGeometry);
     Qt3DRender::QBuffer *indexDataBuffer = new Qt3DRender::QBuffer(Qt3DRender::QBuffer::IndexBuffer, customGeometry);
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///
+        ///
+        QVector3D vxx[36];
+        QVector3D nxx[12];
+        vxx[0].setX(-1.0f);//-1.0f, 0.0f, -0.0f
+        vxx[0].setY(0.0f);
+        vxx[0].setZ(-1.0f);
+        vxx[1].setX(-1.0f);//1.0f, 0.0f, -0.0f
+        vxx[1].setY(0.0f);
+        vxx[1].setZ(0.50f);
+        vxx[2].setX(-1.0f);//0.0f, 1.0f, 0.0f
+        vxx[2].setY(0.50f);
+        vxx[2].setZ(-1.0f);
+        vxx[3].setX(0.0f);//(0.0f, 0.5f, 0.0f);
+        vxx[3].setY(0.5f);
+        vxx[3].setZ(0.0f);
 
+
+        QString strFilename = "/Users/oliviermanette/QtApps/3dtest1/3dtest1.stl";
+        QFile file(strFilename);
+        QByteArray gbaBuffer;
+
+        if (file.open(QIODevice::ReadOnly))
+            gbaBuffer = file.readAll();
+        file.close();
+
+        uint j=0;
+        uint luintIdx=0;
+        uint luintSize = *reinterpret_cast<uint*>((gbaBuffer.data()+80));
+        qDebug()<<"FLOD3D: The number of triangles is: "<<luintSize;
+        float lvector;
+        for (uint i=0;i<9;i+=3){
+            lvector = *reinterpret_cast<float*>((gbaBuffer.data()+96+50*j+i*sizeof (float)));
+            qDebug()<<"FLOD3D: vertex ("<<luintIdx<<") :"<<lvector;
+            vxx[luintIdx].setX(lvector);//-1.0f, 0.0f, -0.0f
+            lvector = *reinterpret_cast<float*>((gbaBuffer.data()+96+50*j+i*sizeof (float)+1*sizeof (float)));
+            qDebug()<<"FLOD3D: vertex ("<<luintIdx<<") :"<<lvector;
+            vxx[luintIdx].setY(lvector);
+            lvector = *reinterpret_cast<float*>((gbaBuffer.data()+96+50*j+i*sizeof (float)+2*sizeof (float)));
+            qDebug()<<"FLOD3D: vertex ("<<luintIdx<<") :"<<lvector;
+            vxx[luintIdx].setZ(lvector);
+
+            luintIdx++;
+        }
+        qDebug()<<"dataSize before : "<<gbaBuffer.size();
+        gbaBuffer.remove(0,84);
+
+        for (uint i=0;i<luintSize;i++){
+            gbaBuffer.remove(i*(9*sizeof (float)),3*sizeof(float));
+            gbaBuffer.remove((i+1)*(9*sizeof (float)),2);
+        }
+        qDebug()<<"dataSize after : "<<gbaBuffer.size();
+
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // vec3 for position
     // vec3 for colors
     // vec3 for normals
@@ -75,17 +135,11 @@ int main(int argc, char* argv[])
     QByteArray vertexBufferData;
     vertexBufferData.resize(4 * (3 + 3 + 3) * sizeof(float));
 
-    // Vertices
-    QVector3D v0(-1.0f, 0.0f, -0.0f);
-    QVector3D v1(1.0f, 0.0f, -0.0f);
-    QVector3D v2(0.0f, 1.0f, 0.0f);
-    QVector3D v3(0.0f, 0.5f, 0.0f);
-
     // Faces Normals
-    QVector3D n023 = QVector3D::normal(v0, v2, v3);
-    QVector3D n012 = QVector3D::normal(v0, v1, v2);
-    QVector3D n310 = QVector3D::normal(v3, v1, v0);
-    QVector3D n132 = QVector3D::normal(v1, v3, v2);
+    QVector3D n023 = QVector3D::normal(vxx[0], vxx[2], vxx[3]);
+    QVector3D n012 = QVector3D::normal(vxx[0], vxx[1], vxx[2]);
+    QVector3D n310 = QVector3D::normal(vxx[3], vxx[1], vxx[0]);
+    QVector3D n132 = QVector3D::normal(vxx[1], vxx[3], vxx[2]);
 
     // Vector Normals
     QVector3D n0 = QVector3D(n023 + n012 + n310).normalized();
@@ -102,10 +156,10 @@ int main(int argc, char* argv[])
     QVector3D orange(0.99f, 0.415f, 0.007f);
 
     QVector<QVector3D> vertices = QVector<QVector3D>()
-            << v0 << n0 << blue
-            << v1 << n1 << orange
-            << v2 << n2 << blue
-            << v3 << n3 << red;
+            << vxx[0] << n0 << yellow
+            << vxx[1] << n1 << blue
+            << vxx[2] << n2 << red;
+     //       << vxx[3] << n3 << red;
 
     float *rawVertexArray = reinterpret_cast<float *>(vertexBufferData.data());
     int idx = 0;
@@ -115,6 +169,10 @@ int main(int argc, char* argv[])
         rawVertexArray[idx++] = v.y();
         rawVertexArray[idx++] = v.z();
     }
+
+
+    qDebug()<<"idx: "<<idx;
+
 
     // Indices (12)
     QByteArray indexBufferData;
@@ -138,7 +196,11 @@ int main(int argc, char* argv[])
     rawIndexArray[10] = 3;
     rawIndexArray[11] = 2;
 
-    vertexDataBuffer->setData(vertexBufferData);
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    vertexDataBuffer->setData(gbaBuffer);
     indexDataBuffer->setData(indexBufferData);
 
     // Attributes
@@ -148,28 +210,28 @@ int main(int argc, char* argv[])
     positionAttribute->setVertexBaseType(Qt3DRender::QAttribute::Float);
     positionAttribute->setVertexSize(3);
     positionAttribute->setByteOffset(0);
-    positionAttribute->setByteStride(9 * sizeof(float));
-    positionAttribute->setCount(4);
+    positionAttribute->setByteStride(3*sizeof (float));
+    positionAttribute->setCount(luintSize);
     positionAttribute->setName(Qt3DRender::QAttribute::defaultPositionAttributeName());
-
+/*
     Qt3DRender::QAttribute *normalAttribute = new Qt3DRender::QAttribute();
     normalAttribute->setAttributeType(Qt3DRender::QAttribute::VertexAttribute);
     normalAttribute->setBuffer(vertexDataBuffer);
     normalAttribute->setVertexBaseType(Qt3DRender::QAttribute::Float);
     normalAttribute->setVertexSize(3);
-    normalAttribute->setByteOffset(3 * sizeof(float));
-    normalAttribute->setByteStride(9 * sizeof(float));
-    normalAttribute->setCount(4);
+    normalAttribute->setByteOffset(0);
+    normalAttribute->setByteStride(50);
+    normalAttribute->setCount(12);
     normalAttribute->setName(Qt3DRender::QAttribute::defaultNormalAttributeName());
 
     Qt3DRender::QAttribute *colorAttribute = new Qt3DRender::QAttribute();
     colorAttribute->setAttributeType(Qt3DRender::QAttribute::VertexAttribute);
     colorAttribute->setBuffer(vertexDataBuffer);
     colorAttribute->setVertexBaseType(Qt3DRender::QAttribute::Float);
-    colorAttribute->setVertexSize(3);
-    colorAttribute->setByteOffset(6 * sizeof(float));
-    colorAttribute->setByteStride(9 * sizeof(float));
-    colorAttribute->setCount(4);
+    colorAttribute->setVertexSize(9);
+    colorAttribute->setByteOffset(3 * sizeof(float));
+    colorAttribute->setByteStride(50);
+    colorAttribute->setCount(36);
     colorAttribute->setName(Qt3DRender::QAttribute::defaultColorAttributeName());
 
     Qt3DRender::QAttribute *indexAttribute = new Qt3DRender::QAttribute();
@@ -179,20 +241,20 @@ int main(int argc, char* argv[])
     indexAttribute->setVertexSize(1);
     indexAttribute->setByteOffset(0);
     indexAttribute->setByteStride(0);
-    indexAttribute->setCount(12);
-
+    indexAttribute->setCount(1);
+*/
     customGeometry->addAttribute(positionAttribute);
-    customGeometry->addAttribute(normalAttribute);
-    customGeometry->addAttribute(colorAttribute);
+    //customGeometry->addAttribute(normalAttribute);
+    //customGeometry->addAttribute(colorAttribute);
     //customGeometry->addAttribute(indexAttribute);
 
-    customMeshRenderer->setInstanceCount(1);
+    customMeshRenderer->setInstanceCount(12);
     customMeshRenderer->setIndexOffset(0);
     customMeshRenderer->setFirstInstance(0);
     customMeshRenderer->setPrimitiveType(Qt3DRender::QGeometryRenderer::Triangles);
     customMeshRenderer->setGeometry(customGeometry);
     // 4 faces of 3 points
-    customMeshRenderer->setVertexCount(4);
+    customMeshRenderer->setVertexCount(36);
 
     customMeshEntity->addComponent(customMeshRenderer);
     customMeshEntity->addComponent(transform);
